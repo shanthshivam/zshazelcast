@@ -1,0 +1,11 @@
+import com.example.demo.Employee
+
+rule "SalaryCheck"
+when
+    $employee: Employee(salary > 10)
+then
+    // Employee passes the salary condition, you can add additional actions here if needed
+    $employee.setSalary(500);
+    System.out.println("Employee passed salary check: " + $employee);
+ 
+end
