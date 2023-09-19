@@ -1,5 +1,7 @@
 package com.example.demo;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
 /*import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 */
@@ -61,9 +63,9 @@ public class NodeEventProcessorApplication {
 
 			pipeline.readFrom(source)
 				.withoutTimestamps()
-				.map(entry -> entry.getValue())
-//				.mapUsingService(ServiceFactories.sharedService(ctx -> createKieSession()), 
-//						(kieSession, employee) -> {
+				//.map(entry -> entry.getValue())
+				.mapUsingService(ServiceFactories.sharedService(ctx -> createKieSession()), 
+						(kieSession, employee) -> {
 //					// Initialize the Drools KieSession
 //					String RULES_CUSTOMER_RULES_DRL = "employee.drl";
 //					KieServices kieServices = KieServices.Factory.get();
@@ -83,16 +85,18 @@ public class NodeEventProcessorApplication {
 //					KieSession kieSessionLocal = kieContainer.newKieSession();
 //					// KieContainer kieContainer = kieServices.getKieClasspathContainer();
 //					// return kieContainer.getKieBase().newKieSession();
-//					kieSession = kieSessionLocal;
-//					
-//					kieSession.insert(employee);
-//					System.out.println("Before rules " + employee);
-//					kieSession.fireAllRules();
-//					System.out.println("After rules " + employee);
-//					kieSession.dispose();
-//					
-//					return employee;
-//				})				
+//					kieSession = kieSessionLocal;//
+					
+					//kieSession.insert(employee);
+					//System.out.println("Before rules " + employee.getValue());
+					
+					kieSession.execute(employee.getValue());
+					//kieSession.fireAllRules();
+					//System.out.println("After rules " + employee.getValue());
+					//kieSession.dispose();
+					
+					return employee.getValue();
+				})				
 				.writeTo(Sinks.list("employee-input"));
 				//.flatMap(List::stream)
 //                .mapUsingService(
@@ -124,17 +128,40 @@ public class NodeEventProcessorApplication {
 //                .drainTo(Sinks.logger());
 
 		JobConfig cfg = new JobConfig().setName("kafka-traffic-monitor");
-		JetInstance instance = Jet.bootstrappedInstance();
-		instance.getMap("employee-input").size();
+		
 
-		instance.newJob(pipeline, cfg).join();
+        //HazelcastInstance hz = Hazelcast.newHazelcastInstance();
+        //HazelcastInstance hz = Hazelcast.bootstrappedInstance();
+        //hz.getJet().newJob(pipeline, cfg);
+		
+		JetInstance instance = Jet.bootstrappedInstance();
+		//instance.getMap("employee-input").size();
+		//instance.getConfig().setEnabled(true);
+
+		instance.newJob(pipeline, cfg);
 	}
 	
-	private static KieSession createKieSession() {
-        // Initialize the Drools KieSession
-        KieServices kieServices = KieServices.Factory.get();
-        KieContainer kieContainer = kieServices.getKieClasspathContainer();
-        return kieContainer.newKieSession();
+	private static StatelessKieSession createKieSession() {
+		// Initialize the Drools KieSession
+		String RULES_CUSTOMER_RULES_DRL = "rules/employee.drl";
+		KieServices kieServices = KieServices.Factory.get();
+		KieFileSystem kieFileSystem = kieServices.newKieFileSystem();
+		// System.out.println("1");
+		kieFileSystem.write(ResourceFactory.newClassPathResource(RULES_CUSTOMER_RULES_DRL));
+		// System.out.println("2");
+		KieBuilder kb = kieServices.newKieBuilder(kieFileSystem);
+		// System.out.println("3");
+		kb.buildAll();
+		// System.out.println("4");
+		KieModule kieModule = kb.getKieModule();
+		/// System.out.println("5");
+//        KieContainer kieContainer = kieServices.newKieContainer(kieModule.getReleaseId());
+		KieContainer kieContainer = kieServices.newKieContainer(kieModule.getReleaseId());
+		/// System.out.println("6");
+		//KieSession kieSessionLocal = kieContainer.newKieSession();
+
+        //return kieContainer.newKieSession();
+        return kieContainer.newStatelessKieSession();
     }
 
 
