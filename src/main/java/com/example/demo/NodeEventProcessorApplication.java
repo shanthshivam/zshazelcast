@@ -61,37 +61,38 @@ public class NodeEventProcessorApplication {
 
 			pipeline.readFrom(source)
 				.withoutTimestamps()
-				.mapUsingService(ServiceFactories.sharedService(ctx -> createKieSession()), 
-						(kieSession, employee) -> {
-					// Initialize the Drools KieSession
-					String RULES_CUSTOMER_RULES_DRL = "employee.drl";
-					KieServices kieServices = KieServices.Factory.get();
-					KieFileSystem kieFileSystem = kieServices.newKieFileSystem();
-					// System.out.println("1");
-					kieFileSystem.write(ResourceFactory.newClassPathResource(RULES_CUSTOMER_RULES_DRL));
-					// System.out.println("2");
-					KieBuilder kb = kieServices.newKieBuilder(kieFileSystem);
-					// System.out.println("3");
-					kb.buildAll();
-					// System.out.println("4");
-					KieModule kieModule = kb.getKieModule();
-					/// System.out.println("5");
-//			        KieContainer kieContainer = kieServices.newKieContainer(kieModule.getReleaseId());
-					KieContainer kieContainer = kieServices.newKieContainer(kieModule.getReleaseId());
-					/// System.out.println("6");
-					KieSession kieSessionLocal = kieContainer.newKieSession();
-					// KieContainer kieContainer = kieServices.getKieClasspathContainer();
-					// return kieContainer.getKieBase().newKieSession();
-					kieSession = kieSessionLocal;
-					
-					kieSession.insert(employee);
-					System.out.println("Before rules " + employee);
-					kieSession.fireAllRules();
-					System.out.println("After rules " + employee);
-					kieSession.dispose();
-					
-					return employee;
-				})				
+				.map(entry -> entry.getValue())
+//				.mapUsingService(ServiceFactories.sharedService(ctx -> createKieSession()), 
+//						(kieSession, employee) -> {
+//					// Initialize the Drools KieSession
+//					String RULES_CUSTOMER_RULES_DRL = "employee.drl";
+//					KieServices kieServices = KieServices.Factory.get();
+//					KieFileSystem kieFileSystem = kieServices.newKieFileSystem();
+//					// System.out.println("1");
+//					kieFileSystem.write(ResourceFactory.newClassPathResource(RULES_CUSTOMER_RULES_DRL));
+//					// System.out.println("2");
+//					KieBuilder kb = kieServices.newKieBuilder(kieFileSystem);
+//					// System.out.println("3");
+//					kb.buildAll();
+//					// System.out.println("4");
+//					KieModule kieModule = kb.getKieModule();
+//					/// System.out.println("5");
+////			        KieContainer kieContainer = kieServices.newKieContainer(kieModule.getReleaseId());
+//					KieContainer kieContainer = kieServices.newKieContainer(kieModule.getReleaseId());
+//					/// System.out.println("6");
+//					KieSession kieSessionLocal = kieContainer.newKieSession();
+//					// KieContainer kieContainer = kieServices.getKieClasspathContainer();
+//					// return kieContainer.getKieBase().newKieSession();
+//					kieSession = kieSessionLocal;
+//					
+//					kieSession.insert(employee);
+//					System.out.println("Before rules " + employee);
+//					kieSession.fireAllRules();
+//					System.out.println("After rules " + employee);
+//					kieSession.dispose();
+//					
+//					return employee;
+//				})				
 				.writeTo(Sinks.list("employee-input"));
 				//.flatMap(List::stream)
 //                .mapUsingService(
